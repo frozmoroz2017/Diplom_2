@@ -5,24 +5,33 @@ import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import ru.praktikum.client.ApiClient;
 import ru.praktikum.model.Order;
 import ru.praktikum.model.User;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 public class OrderCreationTest {
     private String accessToken;
     private List<String> validIngredients;
+    private User user;
 
     @Before
     public void setUp() {
-        Response ingredientsResponse = given()
-                .when()
-                .get("https://stellarburgers.nomoreparties.site/api/ingredients");
+        user = new User(
+                "orderuser_" + System.currentTimeMillis() + "@yandex.ru",
+                "password123",
+                "OrderUser"
+        );
+
+        Response registerResponse = ApiClient.createUser(user);
+        registerResponse.then().statusCode(200);
+        accessToken = registerResponse.path("accessToken");
+
+        Response ingredientsResponse = ApiClient.getIngredients();
         ingredientsResponse.then().statusCode(200);
 
         validIngredients = Arrays.asList(
@@ -34,33 +43,15 @@ public class OrderCreationTest {
     @After
     public void tearDown() {
         if (accessToken != null) {
-            given()
-                    .header("Authorization", accessToken)
-                    .delete("https://stellarburgers.nomoreparties.site/api/auth/user");
+            ApiClient.deleteUser(accessToken);
         }
     }
 
     @Test
     @DisplayName("Создание заказа с авторизацией")
     public void testCreateOrderWithAuth() {
-        User user = new User("orderuser_" + System.currentTimeMillis() + "@yandex.ru",
-                "password123", "OrderUser");
-
-        Response registerResponse = given()
-                .header("Content-type", "application/json")
-                .body(user)
-                .when()
-                .post("https://stellarburgers.nomoreparties.site/api/auth/register");
-        registerResponse.then().statusCode(200);
-        accessToken = registerResponse.path("accessToken");
-
         Order order = new Order(validIngredients);
-        Response orderResponse = given()
-                .header("Content-type", "application/json")
-                .header("Authorization", accessToken)
-                .body(order)
-                .when()
-                .post("https://stellarburgers.nomoreparties.site/api/orders");
+        Response orderResponse = ApiClient.createOrder(order, accessToken);
 
         orderResponse.then()
                 .statusCode(200)
@@ -73,11 +64,7 @@ public class OrderCreationTest {
     @DisplayName("Создание заказа без авторизации")
     public void testCreateOrderWithoutAuth() {
         Order order = new Order(validIngredients);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(order)
-                .when()
-                .post("https://stellarburgers.nomoreparties.site/api/orders");
+        Response response = ApiClient.createOrder(order, null);
 
         response.then()
                 .statusCode(200)
@@ -90,11 +77,7 @@ public class OrderCreationTest {
     @DisplayName("Создание заказа с ингредиентами")
     public void testCreateOrderWithIngredients() {
         Order order = new Order(validIngredients);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(order)
-                .when()
-                .post("https://stellarburgers.nomoreparties.site/api/orders");
+        Response response = ApiClient.createOrder(order, null);
 
         response.then()
                 .statusCode(200)
@@ -106,11 +89,7 @@ public class OrderCreationTest {
     @DisplayName("Создание заказа без ингредиентов")
     public void testCreateOrderWithoutIngredients() {
         Order order = new Order(null);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(order)
-                .when()
-                .post("https://stellarburgers.nomoreparties.site/api/orders");
+        Response response = ApiClient.createOrder(order, null);
 
         response.then()
                 .statusCode(400)
@@ -123,11 +102,7 @@ public class OrderCreationTest {
     public void testCreateOrderWithInvalidIngredientHash() {
         List<String> invalidIngredients = Arrays.asList("invalid_hash_1", "invalid_hash_2");
         Order order = new Order(invalidIngredients);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(order)
-                .when()
-                .post("https://stellarburgers.nomoreparties.site/api/orders");
+        Response response = ApiClient.createOrder(order, null);
 
         response.then().statusCode(500);
     }
