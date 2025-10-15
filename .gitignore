@@ -1,0 +1,24 @@
+# IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Maven
+target/
+.mvn/
+
+# Allure (оставляем только результаты)
+.allure/
+
+# System
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
