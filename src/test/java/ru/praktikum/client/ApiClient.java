@@ -1,5 +1,6 @@
 package ru.praktikum.client;
 
+import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import ru.praktikum.model.Order;
 import ru.praktikum.model.User;
@@ -9,6 +10,7 @@ import static io.restassured.RestAssured.given;
 public class ApiClient {
     private static final String BASE_URL = "https://stellarburgers.education-services.ru/api";
 
+    @Step("Создание пользователя")
     public static Response createUser(User user) {
         return given()
                 .header("Content-type", "application/json")
@@ -18,6 +20,7 @@ public class ApiClient {
                 .post("/auth/register");
     }
 
+    @Step("Авторизация пользователя")
     public static Response loginUser(User user) {
         return given()
                 .header("Content-type", "application/json")
@@ -27,6 +30,7 @@ public class ApiClient {
                 .post("/auth/login");
     }
 
+    @Step("Удаление пользователя")
     public static Response deleteUser(String accessToken) {
         return given()
                 .header("Authorization", accessToken)
@@ -35,6 +39,7 @@ public class ApiClient {
                 .delete("/auth/user");
     }
 
+    @Step("Получение списка ингредиентов")
     public static Response getIngredients() {
         return given()
                 .baseUri(BASE_URL)
@@ -42,6 +47,7 @@ public class ApiClient {
                 .get("/ingredients");
     }
 
+    @Step("Создание заказа")
     public static Response createOrder(Order order, String accessToken) {
         if (accessToken != null) {
             return given()
